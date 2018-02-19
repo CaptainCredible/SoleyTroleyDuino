@@ -16,6 +16,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SoleyTroleyDuino.ino" />
+    <None Include="DEBUGFUNCS.ino" />
+    <None Include="inputHarvest.ino" />
   </ItemGroup>
- 
+  <ItemGroup>
+    <ClInclude Include="__vm\.SoleyTroleyDuino.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
