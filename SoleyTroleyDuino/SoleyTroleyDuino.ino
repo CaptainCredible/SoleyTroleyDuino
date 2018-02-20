@@ -9,6 +9,8 @@ Author:	Stoodio 2nd
 const byte NOTEON = 0x09;
 const byte NOTEOFF = 0x08;
 
+#define potAcc 100
+#define potBcc 101
 #define powerLED 5
 #define USBSwitch 16
 #define recSwitch 3
@@ -73,29 +75,30 @@ void sendUSBMIDIcontrolChange(byte channel, byte control, byte value) {
 void loop() {
 	getbuttValues();
 	handleButts();
-	getPotValues();
+	//getPotValues();
 	handlePots();
 	usbMidiProcessing();
 	handlePowerLed();
-	handleOnTimers();
+	//handleOnTimers();
 	//debugPotValues();
 	//pwrLedDebug(USBSwitchState);
 	//debugButtNumbers();
 }
 
 byte currentChannel = 0;  //0 to 4
-unsigned long onTimers[25] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; //how long has this note been on
-bool noteIsOn[25] = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+unsigned long onTimers[127];// = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }; //how long has this note been on
+//bool noteIsOn[128] = { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+bool noteIsOn[640] = {
+	false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+};
 
-void handlePots() {
 
-}
 
 void handleOnTimers() {
 	for (byte i = 0; i < 25; i++) {
 		if (noteIsOn[i]) {
 			if (millis() - onTimers[i] > desiredNoteLength) {
-				HandleNoteOff(i);
+				HandleNoteOff(i, 1);
 				sendUSBMIDInoteOff(1, i, 0);
 			}
 		}
@@ -124,17 +127,17 @@ void handleButts() {
 			}
 			else {
 				if (USBSwitchState) {
-					sendUSBMIDInoteOn(1,i+channelOffset,127);
+					sendUSBMIDInoteOn(1, i + channelOffset, 127);
 				}
 				else {
-					HandleNoteOn(i + channelOffset);
+					HandleNoteOn(i + channelOffset, 1);
 				}
 			}
-			
+
 		}
 		else if (buttBongs[i]) {
-			HandleNoteOff(i + channelOffset);
-			sendUSBMIDInoteOff(1, i+channelOffset, 0);
+			HandleNoteOff(i + channelOffset, 1);
+			sendUSBMIDInoteOff(1, i + channelOffset, 0);
 		}
 	}
 
@@ -148,32 +151,76 @@ void usbMidiProcessing() {
 
 		// IF NOTE ON WITH VELOCITY GREATER THAN ZERO
 		if ((e.type == NOTEON) && (e.m3 > 0)) {
+
 			//jitterfreq = 0;
-			HandleNoteOn((e.m2 % 25));
+			byte midiChannel = e.m1 - 144;
+			if (midiChannel == 0) {
+				HandleNoteOn((e.m2 % 25) + 1000, midiChannel);
+			}
+			else if (midiChannel < 5) {
+				
+				HandleNoteOn(e.m2 + 1000, midiChannel);
+			}
+			else {
+				Serial.println("CHANNEL OUT OF RANGE");
+			}
+			Serial.print("on channel - ");
+			Serial.println(midiChannel);
+			//HandleNoteOn(e.m2);
 		}
 		// IF USB NOTE OFF
 		else if (e.type == NOTEOFF) {
-			HandleNoteOff((e.m2 % 25));
+			byte midiChannel = e.m1 - 128;
+			if (midiChannel == 0) {
+				HandleNoteOff((e.m2 % 25) + 1000, midiChannel);
+			}
+			else if(midiChannel < 5) {
+				HandleNoteOff(e.m2 + 1000, midiChannel);
+			}
+			Serial.print("off channel - ");
+			Serial.println(midiChannel);
+			//HandleNoteOff(e.m2);
 		}
 		// IF NOTE ON W/ ZERO VELOCITY
 		else if ((e.type == NOTEON) && (e.m3 == 0)) {
-			HandleNoteOff((e.m2 % 25));
+			byte midiChannel = e.m1 - 128;
+			if (midiChannel == 0) {
+				HandleNoteOff((e.m2 % 25) + 1000, midiChannel);
+			}
+			else if (midiChannel < 5) {
+				HandleNoteOff(e.m2 + 1000, midiChannel);
+			}
+			Serial.print("off channel - ");
+			Serial.println(midiChannel);
+			//HandleNoteOff(e.m2);
 		}
 
 	}
 
 }
 
-void HandleNoteOn(byte note) {  //noteOns are sent as positive values
-	onTimers[note] = millis();
-	noteIsOn[note] = true;
-	Serial1.println(String(note));
-	//Serial.println(String(note));
+void HandleNoteOn(int note, int channel) {  //noteOns are sent as positive values
+	//onTimers[note] = millis();
+	int noteToFlag = note - 1000;
+	noteToFlag = noteToFlag + (128 * channel);
+	noteIsOn[noteToFlag] = true;
+	Serial.print("flagged on  note ");
+	Serial.println(noteToFlag);
+	int noteToSend = note + (channel * 1000);
+	Serial1.println(String(noteToSend));
+	Serial.print("on note ");
+	Serial.println(String(noteToSend));
 }
 
-void HandleNoteOff(byte note) { //noteOffs are sent as negative values
-	byte offsetNote = note + 1;
-	Serial1.println(String(offsetNote*-1));
-	noteIsOn[note] = false;
-	//Serial.println(String(offsetNote*-1));
+void HandleNoteOff(int note, int channel) { //noteOffs are sent as negative values
+	int noteToFlag = note - 1000;
+	noteToFlag = noteToFlag + (128 * channel);
+	noteIsOn[noteToFlag] = false;
+	Serial.print("flagged off note ");
+	Serial.println(noteToFlag);
+	int offsetNote = note *-1;
+	offsetNote = offsetNote - (channel * 1000);
+	Serial1.println(String(offsetNote));
+	Serial.print("off note ");
+	Serial.println(String(offsetNote));
 }

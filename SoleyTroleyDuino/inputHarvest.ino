@@ -1,12 +1,37 @@
-void getPotValues() {
-	potAVal = analogRead(potA);
-	potBVal = analogRead(potB);
+void handlePots() {
+	int tempAVal = analogRead(potA)>>3;
+	if (potAVal != tempAVal) {
+		potAVal = tempAVal;
+		
+		if (USBSwitchState) {
+			sendUSBMIDIcontrolChange(1, potAcc, potAVal);
+		}
+		else {
+			Serial1.println(potAVal+1000);
+			Serial.println(potAVal + 1000);
+		}
+	}
+
+	int tempBVal = analogRead(potB) >> 3;
+	if (potBVal != tempBVal) {
+		potBVal = tempBVal;
+		if (USBSwitchState) {
+			sendUSBMIDIcontrolChange(1, potBcc, potBVal);
+		}
+		else {
+			Serial1.println(potBVal+2000);
+			Serial.println(potBVal + 2000);
+		}
+	}
+
+	
 	byte tempTempoVal = analogRead(tempo) >> 3;
 	if (tempoVal != tempTempoVal) {
 		tempoVal = tempTempoVal;
 		sendUSBMIDIcontrolChange(1, tempoCC, tempoVal);
-		//Serial.println(tempoVal);
 	}
+
+
 	
 
 }
