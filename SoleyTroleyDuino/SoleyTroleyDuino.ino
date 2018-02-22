@@ -39,6 +39,7 @@ bool buttBongs[5] = { false, false, false, false, false };
 bool oldButtState = false;
 void setup() {
 	Serial1.begin(19200);
+	//Serial1.begin(115200);
 	pinMode(powerLED, OUTPUT);
 	pinMode(USBSwitch, INPUT);
 	pinMode(shiftButton, INPUT_PULLUP);
@@ -73,9 +74,9 @@ void sendUSBMIDIcontrolChange(byte channel, byte control, byte value) {
 
 // the loop function runs over and over again until power down or reset
 void loop() {
+
 	getbuttValues();
 	handleButts();
-	//getPotValues();
 	handlePots();
 	usbMidiProcessing();
 	handlePowerLed();
@@ -122,10 +123,12 @@ void handleButts() {
 	for (byte i = 0; i < 5; i++) {
 		if (buttBangs[i]) {
 			if (shiftButtState) {
+				Serial.println("  cough  ");
 				currentChannel = i;
 				channelOffset = currentChannel * 5;
 			}
 			else {
+				Serial.println("  on  ");
 				if (USBSwitchState) {
 					sendUSBMIDInoteOn(1, i + channelOffset, 127);
 				}
@@ -133,11 +136,13 @@ void handleButts() {
 					HandleNoteOn(i + channelOffset, 1);
 				}
 			}
-
+			//buttBangs[i] = false;
 		}
 		else if (buttBongs[i]) {
+			Serial.println("  off ");
 			HandleNoteOff(i + channelOffset, 1);
 			sendUSBMIDInoteOff(1, i + channelOffset, 0);
+			buttBongs[i] = false;
 		}
 	}
 
@@ -162,10 +167,10 @@ void usbMidiProcessing() {
 				HandleNoteOn(e.m2 + 1000, midiChannel);
 			}
 			else {
-				Serial.println("CHANNEL OUT OF RANGE");
+			//	Serial.println("CHANNEL OUT OF RANGE");
 			}
-			Serial.print("on channel - ");
-			Serial.println(midiChannel);
+			//Serial.print("on channel - ");
+			//Serial.println(midiChannel);
 			//HandleNoteOn(e.m2);
 		}
 		// IF USB NOTE OFF
@@ -177,8 +182,8 @@ void usbMidiProcessing() {
 			else if(midiChannel < 5) {
 				HandleNoteOff(e.m2 + 1000, midiChannel);
 			}
-			Serial.print("off channel - ");
-			Serial.println(midiChannel);
+			//Serial.print("off channel - ");
+			//Serial.println(midiChannel);
 			//HandleNoteOff(e.m2);
 		}
 		// IF NOTE ON W/ ZERO VELOCITY
@@ -190,8 +195,8 @@ void usbMidiProcessing() {
 			else if (midiChannel < 5) {
 				HandleNoteOff(e.m2 + 1000, midiChannel);
 			}
-			Serial.print("off channel - ");
-			Serial.println(midiChannel);
+			//Serial.print("off channel - ");
+			//Serial.println(midiChannel);
 			//HandleNoteOff(e.m2);
 		}
 
@@ -204,23 +209,23 @@ void HandleNoteOn(int note, int channel) {  //noteOns are sent as positive value
 	int noteToFlag = note - 1000;
 	noteToFlag = noteToFlag + (128 * channel);
 	noteIsOn[noteToFlag] = true;
-	Serial.print("flagged on  note ");
-	Serial.println(noteToFlag);
+	//Serial.print("flagged on  note ");
+	//Serial.println(noteToFlag);
 	int noteToSend = note + (channel * 1000);
 	Serial1.println(String(noteToSend));
-	Serial.print("on note ");
-	Serial.println(String(noteToSend));
+	//Serial.print("on note ");
+	//Serial.println(String(noteToSend));
 }
 
 void HandleNoteOff(int note, int channel) { //noteOffs are sent as negative values
 	int noteToFlag = note - 1000;
 	noteToFlag = noteToFlag + (128 * channel);
 	noteIsOn[noteToFlag] = false;
-	Serial.print("flagged off note ");
-	Serial.println(noteToFlag);
+	//Serial.print("flagged off note ");
+	//Serial.println(noteToFlag);
 	int offsetNote = note *-1;
 	offsetNote = offsetNote - (channel * 1000);
 	Serial1.println(String(offsetNote));
-	Serial.print("off note ");
-	Serial.println(String(offsetNote));
+	//Serial.print("off note ");
+	//Serial.println(String(offsetNote));
 }
