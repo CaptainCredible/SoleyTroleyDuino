@@ -33,7 +33,10 @@ void handlePots() {
 	byte tempTempoVal = analogRead(tempo) >> 3;
 	if (tempoVal != tempTempoVal) {
 		tempoVal = tempTempoVal;
-		sendUSBMIDIcontrolChange(1, tempoCC, tempoVal);
+		if (USBSwitchState && recSwitchState) {
+
+			sendUSBMIDIcontrolChange(1, tempoCC, tempoVal);
+		}
 	}
 
 
